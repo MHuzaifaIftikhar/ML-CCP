@@ -11,7 +11,7 @@
 * **Course:** Machine Learning (Practical) — Course Code: `AI-3202`
 * **Institution:** Dawood University of Engineering & Technology (DUET), Karachi
 * **Department:** Department of Artificial Intelligence
-* **Batch:** 2023-F (5th Semester, 3rd Year)
+* **Batch:** 2024-F (5th Semester, 3rd Year)
 * **Student Name:** Muhammad Huzaifa Iftikhar
 * **GitHub Repository:** [https://github.com/MHuzaifaIftikhar/ML-CCP](https://github.com/MHuzaifaIftikhar/ML-CCP)
 * **Course Instructor:** Engr. Hamza Farooqui
