@@ -1,0 +1,19 @@
+ASL SIGN TRANSLATOR: HYPERPARAMETER TUNING REPORT
+============================================================
+
+Dataset: Cleaned Custom Dataset (11120 total samples)
+Training split: 8896 samples, Test split: 2224 samples
+
+OPTIMAL SVM HYPERPARAMETERS (Lab 06 Task 4):
+  - C: 20.0
+  - gamma: 0.05
+  - kernel: rbf
+  Test Accuracy: 99.78% (Baseline: 96.54%)
+  Test Macro F1: 99.76% (Baseline: 96.55%)
+
+OPTIMAL KNN HYPERPARAMETERS (Lab 08 Task 4 & 7):
+  - metric: manhattan
+  - n_neighbors: 1
+  - weights: uniform
+  Test Accuracy: 98.38% (Baseline: 98.29%)
+  Test Macro F1: 98.43% (Baseline: 98.31%)
