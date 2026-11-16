@@ -385,6 +385,20 @@ def train_dataset_models(
         save_path=cm_rf_path
     )
 
+    # Also update primary report figures
+    plot_confusion_matrix(
+        metrics_svm["confusion_matrix"],
+        labels=eval_labels,
+        title=f"Lab 06: SVM Confusion Matrix ({mode_label})",
+        save_path=config.CONFUSION_MATRIX_SVM_PATH
+    )
+    plot_confusion_matrix(
+        metrics_knn["confusion_matrix"],
+        labels=eval_labels,
+        title=f"Lab 08: KNN Confusion Matrix ({mode_label})",
+        save_path=config.CONFUSION_MATRIX_KNN_PATH
+    )
+
     # 3-Model comparison bar chart for this dataset
     comparison_dict = {
         "SVM (Lab 06)": metrics_svm,
@@ -392,6 +406,7 @@ def train_dataset_models(
         "Random Forest": metrics_rf
     }
     plot_model_comparison(comparison_dict, save_path=comp_plot_path)
+    plot_model_comparison(comparison_dict, save_path=config.MODEL_COMPARISON_PLOT_PATH)
 
     # Step 6: Save Model Artifacts
     svm_path = target_dir / "svm_model.pkl"
@@ -404,14 +419,13 @@ def train_dataset_models(
     joblib.dump(rf_model, rf_path)
     joblib.dump(scaler, scaler_path)
 
-    # If custom dataset, also update default top-level models directory
-    if dataset_name.lower() == "custom":
-        joblib.dump(svm_model, config.SVM_MODEL_PATH)
-        joblib.dump(knn_model, config.KNN_MODEL_PATH)
-        joblib.dump(rf_model, config.RF_MODEL_PATH)
-        joblib.dump(scaler, config.SCALER_PATH)
+    # Save to primary top-level models directory
+    joblib.dump(svm_model, config.SVM_MODEL_PATH)
+    joblib.dump(knn_model, config.KNN_MODEL_PATH)
+    joblib.dump(rf_model, config.RF_MODEL_PATH)
+    joblib.dump(scaler, config.SCALER_PATH)
 
-    print(f"\n[+] Saved {mode_label} artifacts (SVM, KNN, RF, Scaler) to: {target_dir}")
+    print(f"\n[+] Saved {mode_label} artifacts (SVM, KNN, RF, Scaler) to: {target_dir} and {config.MODELS_DIR}")
     return metrics_svm, metrics_knn, metrics_rf
 
 
@@ -483,9 +497,9 @@ if __name__ == "__main__":
     parser.add_argument(
         "--dataset",
         type=str,
-        default="all",
-        choices=["custom", "kaggle", "asl36", "all"],
-        help="Dataset to train on: 'custom', 'kaggle', 'asl36', or 'all' (default: all)"
+        default="asl36",
+        choices=["asl36", "custom", "kaggle", "all"],
+        help="Dataset to train on: 'asl36' (default), 'custom', 'kaggle', or 'all'"
     )
     parser.add_argument(
         "--tune",
