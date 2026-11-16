@@ -33,17 +33,20 @@ PROCESSED_DATA_DIR.mkdir(parents=True, exist_ok=True)
 MODELS_DIR.mkdir(parents=True, exist_ok=True)
 REPORTS_DIR.mkdir(parents=True, exist_ok=True)
 
-# Subdirectories for Dual-Mode Dataset Models (Custom Lab vs Kaggle Benchmark)
+# Subdirectories for Multi-Mode Dataset Models (Custom Lab vs Kaggle Benchmark vs ASL 36 Classes)
 CUSTOM_MODELS_DIR = MODELS_DIR / "custom"
 KAGGLE_MODELS_DIR = MODELS_DIR / "kaggle"
+ASL36_MODELS_DIR = MODELS_DIR / "asl36"
 CUSTOM_MODELS_DIR.mkdir(parents=True, exist_ok=True)
 KAGGLE_MODELS_DIR.mkdir(parents=True, exist_ok=True)
+ASL36_MODELS_DIR.mkdir(parents=True, exist_ok=True)
 
 # Dataset File Paths
 RAW_CSV_PATH = RAW_CSV_DIR / "sign_landmarks.csv"
 CUSTOM_CSV_PATH = RAW_CSV_DIR / "custom_landmarks.csv"
 CLEANED_CUSTOM_CSV_PATH = RAW_CSV_DIR / "cleaned_custom_landmarks.csv"
 KAGGLE_CSV_PATH = RAW_CSV_DIR / "kaggle_landmarks.csv"
+ASL36_CSV_PATH = RAW_CSV_DIR / "asl36_landmarks.csv"
 
 # Preprocessed Data Splits
 PROCESSED_TRAIN_PATH = PROCESSED_DATA_DIR / "train_preprocessed.npz"
@@ -52,17 +55,26 @@ PROCESSED_TEST_PATH = PROCESSED_DATA_DIR / "test_preprocessed.npz"
 # Primary / Default Model Artifact Paths
 SVM_MODEL_PATH = MODELS_DIR / "svm_model.pkl"
 KNN_MODEL_PATH = MODELS_DIR / "knn_model.pkl"
+RF_MODEL_PATH = MODELS_DIR / "rf_model.pkl"
 SCALER_PATH = MODELS_DIR / "scaler.pkl"
 
 # Custom Lab Model Artifact Paths
 CUSTOM_SVM_PATH = CUSTOM_MODELS_DIR / "svm_model.pkl"
 CUSTOM_KNN_PATH = CUSTOM_MODELS_DIR / "knn_model.pkl"
+CUSTOM_RF_PATH = CUSTOM_MODELS_DIR / "rf_model.pkl"
 CUSTOM_SCALER_PATH = CUSTOM_MODELS_DIR / "scaler.pkl"
 
 # Kaggle Benchmark Model Artifact Paths
 KAGGLE_SVM_PATH = KAGGLE_MODELS_DIR / "svm_model.pkl"
 KAGGLE_KNN_PATH = KAGGLE_MODELS_DIR / "knn_model.pkl"
+KAGGLE_RF_PATH = KAGGLE_MODELS_DIR / "rf_model.pkl"
 KAGGLE_SCALER_PATH = KAGGLE_MODELS_DIR / "scaler.pkl"
+
+# ASL 36-Classes Model Artifact Paths (0-9 Digits + A-Z Letters)
+ASL36_SVM_PATH = ASL36_MODELS_DIR / "svm_model.pkl"
+ASL36_KNN_PATH = ASL36_MODELS_DIR / "knn_model.pkl"
+ASL36_RF_PATH = ASL36_MODELS_DIR / "rf_model.pkl"
+ASL36_SCALER_PATH = ASL36_MODELS_DIR / "scaler.pkl"
 
 # MediaPipe HandLandmarker Model
 HAND_LANDMARKER_MODEL_PATH = MODELS_DIR / "hand_landmarker.task"
@@ -85,6 +97,12 @@ NUM_CLASSES = len(LABELS)               # 26 classes
 # Bidirectional mapping between label characters and integer indices
 LABEL_TO_IDX = {letter: idx for idx, letter in enumerate(LABELS)}
 IDX_TO_LABEL = {idx: letter for idx, letter in enumerate(LABELS)}
+
+# All 36 classes (10 Digits: 0-9 + 26 Alphabet Letters: A-Z)
+LABELS_36 = [str(i) for i in range(10)] + list(string.ascii_uppercase)
+NUM_CLASSES_36 = len(LABELS_36)         # 36 classes
+LABEL_TO_IDX_36 = {ch: idx for idx, ch in enumerate(LABELS_36)}
+IDX_TO_LABEL_36 = {idx: ch for idx, ch in enumerate(LABELS_36)}
 
 # Hand Keypoint Feature Specifications:
 # MediaPipe extracts 21 3D landmarks (x, y, z) per hand:
@@ -121,6 +139,10 @@ KNN_NEIGHBORS = 1          # Optimal number of neighbors k (98.38% test accuracy
 KNN_METRIC = "manhattan"   # Optimal L1 Manhattan distance metric
 KNN_WEIGHTS = "uniform"    # Optimal uniform neighbor weighting
 KNN_K_RANGE = [1, 3, 5, 7, 9, 11]  # Values of k tested in tuning and sensitivity analysis
+
+# Random Forest Classifier (Ensemble Baseline)
+RF_ESTIMATORS = 100        # Number of decision trees
+RF_RANDOM_STATE = 42       # Reproducible seed
 
 
 # =============================================================================

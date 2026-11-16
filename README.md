@@ -5,7 +5,7 @@
 [![OpenCV](https://img.shields.io/badge/OpenCV-4.8%2B-green.svg)](https://opencv.org/)
 [![MediaPipe](https://img.shields.io/badge/MediaPipe-0.10%2B-orange.svg)](https://developers.google.com/mediapipe)
 [![Scikit-Learn](https://img.shields.io/badge/scikit--learn-1.3%2B-yellow.svg)](https://scikit-learn.org/)
-[![Tests](https://img.shields.io/badge/Tests-7%2F7%20Passed%20(100%25)-brightgreen.svg)](tests/test_pipeline.py)
+[![Tests](https://img.shields.io/badge/Tests-8%2F8%20Passed%20(100%25)-brightgreen.svg)](tests/test_pipeline.py)
 [![License: MIT](https://img.shields.io/badge/License-MIT-purple.svg)](LICENSE)
 
 * **Course:** Machine Learning (Practical) — Course Code: `AI-3202`
@@ -20,13 +20,14 @@
 
 ## 1. Executive Summary & Project Overview
 
-This project presents a production-ready, modular, and real-time **American Sign Language (ASL) to English Translator** operating directly on live 720p HD webcam video streams. The system leverages computer vision to track 21 3D hand keypoints in real time, projects coordinates into a scale- and position-invariant feature space (63 numerical features), classifies the hand gesture across all 26 English alphabet letters (`A` through `Z`) using machine learning models, and renders an Augmented Reality (AR) Heads-Up Display (HUD) overlay featuring a temporal frame-smoothing engine that eliminates prediction jitter.
+This project presents a production-ready, modular, and real-time **American Sign Language (ASL) to English Translator** operating directly on live 720p HD webcam video streams. The system leverages computer vision to track 21 3D hand keypoints in real time, projects coordinates into a scale- and position-invariant feature space (63 numerical features), classifies the hand gesture across either standard 26 English alphabet letters (`A` through `Z`) or comprehensive 36 classes (digits `0-9` + letters `A-Z`) using 3 distinct machine learning models (SVM, KNN, and Random Forest), and renders an Augmented Reality (AR) Heads-Up Display (HUD) overlay featuring a temporal frame-smoothing engine that eliminates prediction jitter.
 
-The implementation fulfills the rigorous requirements of **Lab 14: Complex Computing Activity (Project Idea 5: Gesture Recognition for AR Controls / Translation)** by integrating concepts from four foundational labs:
-1. **Lab 01 (Data Preprocessing):** Anomaly filtering via distance-to-centroid thresholds, null imputation, label encoding, 80/20 stratified splitting, and Z-score standardization via `StandardScaler`.
+The implementation fulfills the rigorous requirements of **Lab 14: Complex Computing Activity (Project Idea 5: Gesture Recognition for AR Controls / Translation)** by integrating concepts across foundational labs:
+1. **Lab 01 (Data Preprocessing):** Anomaly filtering via distance-to-centroid thresholds, null imputation, label encoding (26 letters / 36 classes), 80/20 stratified splitting, and Z-score standardization via `StandardScaler`.
 2. **Lab 06 (Support Vector Machine Classifier):** Non-linear multi-class SVM with Radial Basis Function (RBF) kernel, soft-margin regularization, and Platt-scaled probability estimation.
 3. **Lab 08 (K-Nearest Neighbors Classifier):** Instance-based classification benchmark, Manhattan distance metric ($L_1$), uniform neighbor weighting, and hyperparameter sensitivity analysis across $k \in [1, 3, 5, 7, 9, 11, 15]$.
-4. **Lab 13 (ML × AR — Gesture Recognition):** Real-time MediaPipe hand landmark extraction (cross-version support for both Tasks and Solutions APIs), real-time inference loop, AR visual HUD overlay, and sliding-window majority-voting temporal stabilization.
+4. **Ensemble Learning (Random Forest Classifier):** Multi-tree bootstrap aggregated ensemble (100 estimators) providing robust decision-boundary partitions across high-dimensional keypoints.
+5. **Lab 13 (ML × AR — Gesture Recognition):** Real-time MediaPipe hand landmark extraction (cross-version support for both Tasks and Solutions APIs), real-time inference loop, AR visual HUD overlay, and sliding-window majority-voting temporal stabilization.
 
 ---
 
@@ -68,21 +69,22 @@ flowchart TD
 
 ```text
 sign-language-translator/
-├── config.py                 # Central configuration for paths, hyperparameters, and 26 ASL labels
+├── config.py                 # Central configuration for paths, hyperparameters, 26 and 36 ASL labels
 ├── requirements.txt          # Python dependencies
 ├── .gitignore                # Production git ignore rules
 ├── README.md                 # Complete documentation and lab manual alignment
-├── app.py                    # Real-time dual-dataset webcam inference application (Lab 13 & 14)
+├── app.py                    # Real-time multi-dataset & 3-model webcam inference application (Lab 13 & 14)
 ├── data/
 │   ├── collect_landmarks.py  # Interactive HD dataset recorder with 100-batch countdown and coach
+│   ├── extract_asl36_dataset.py # High-precision border-padded landmark extractor for ASL 36 classes
 │   ├── generate_dataset.py   # Physiological synthetic landmark dataset generator
 │   ├── import_kaggle_csv.py  # Kaggle CSV and image landmark extractor
-│   ├── raw_csv/              # Raw and cleaned landmark datasets (all 26 classes, 63 features)
-│   │   ├── custom_landmarks.csv         # Complete custom dataset (11,120 rows)
-│   │   ├── cleaned_custom_landmarks.csv # Outlier-filtered custom dataset (11,120 rows)
-│   │   ├── sign_landmarks.csv           # Active runtime custom dataset (11,120 rows)
-│   │   ├── custom_landmarks_backup.csv  # Verified safe backup (all 26 classes)
-│   │   └── kaggle_landmarks.csv         # Kaggle benchmark dataset (8,000+ rows)
+│   ├── raw_csv/              # Raw and cleaned landmark datasets (26 & 36 classes, 63 features)
+│   │   ├── custom_landmarks.csv         # Complete custom dataset (12,026 rows)
+│   │   ├── cleaned_custom_landmarks.csv # Outlier-filtered custom dataset (11,547 rows)
+│   │   ├── sign_landmarks.csv           # Active runtime custom dataset
+│   │   ├── kaggle_landmarks.csv         # Kaggle benchmark dataset (8,000+ rows)
+│   │   └── asl36_landmarks.csv          # ASL 36-Classes dataset (2,417 rows: 0-9 & A-Z)
 │   └── processed/
 │       ├── train_preprocessed.npz       # Standardized training split
 │       ├── test_preprocessed.npz        # Standardized test split
@@ -92,30 +94,31 @@ sign-language-translator/
 │           ├── knn_tuning_curves.png
 │           ├── confusion_matrix_svm_tuned.png
 │           ├── confusion_matrix_knn_tuned.png
+│           ├── confusion_matrix_rf.png
+│           ├── confusion_matrix_svm_asl36.png
+│           ├── confusion_matrix_knn_asl36.png
+│           ├── confusion_matrix_rf_asl36.png
+│           ├── model_comparison_asl36.png
 │           ├── model_comparison.png
 │           └── dataset_mode_comparison.png
 ├── models/
 │   ├── hand_landmarker.task  # MediaPipe HandLandmarker model bundle (auto-downloaded)
-│   ├── svm_model.pkl         # Active tuned SVM classifier (99.78% accuracy)
-│   ├── knn_model.pkl         # Active tuned KNN classifier (98.38% accuracy)
+│   ├── svm_model.pkl         # Active tuned SVM classifier
+│   ├── knn_model.pkl         # Active tuned KNN classifier
+│   ├── rf_model.pkl          # Active Random Forest classifier
 │   ├── scaler.pkl            # Active StandardScaler object
-│   ├── custom/               # Tuned custom dataset model artifacts
-│   │   ├── svm_model.pkl
-│   │   ├── knn_model.pkl
-│   │   └── scaler.pkl
-│   └── kaggle/               # Clean Kaggle benchmark model artifacts
-│       ├── svm_model.pkl
-│       ├── knn_model.pkl
-│       └── scaler.pkl
+│   ├── custom/               # Tuned custom dataset model artifacts (SVM, KNN, RF, Scaler)
+│   ├── kaggle/               # Clean Kaggle benchmark model artifacts (SVM, KNN, RF, Scaler)
+│   └── asl36/                # ASL 36-Classes model artifacts (SVM, KNN, RF, Scaler)
 ├── src/
 │   ├── __init__.py           # Package marker
 │   ├── hand_tracker.py       # Universal MediaPipe wrapper (Tasks & Solutions APIs)
-│   ├── preprocessing.py      # Lab 01: Centroid filtering, encoding, splitting, and scaling
-│   ├── train.py              # Labs 06 & 08: Multi-dataset training & comparative benchmark
+│   ├── preprocessing.py      # Lab 01: Centroid filtering, 26/36 class encoding, splitting, and scaling
+│   ├── train.py              # Labs 06, 08 & Ensemble: Tri-dataset & 3-model training & benchmark
 │   ├── tune.py               # Labs 06 & 08: 5-Fold Stratified GridSearchCV hyperparameter engine
 │   └── utils.py              # Lab 13 & 14: TemporalSmoother (deque+Counter), FPS, AR HUD, plots
 └── tests/
-    └── test_pipeline.py      # Automated 7-point verification suite (100% pass rate)
+    └── test_pipeline.py      # Automated 8-point verification suite (100% pass rate)
 ```
 
 ---
@@ -158,6 +161,22 @@ Evaluating both baseline and tuned models on the unseen 20% test partition ($2,2
 | **Macro Recall** | 96.57% | **99.77%** | **+3.20%** | 98.30% | **98.46%** | **+0.16%** |
 | **Macro F1-Score** | 96.55% | **99.76%** | **+3.21%** | 98.31% | **98.43%** | **+0.12%** |
 | **Inference Latency** | 0.579 ms | **0.305 ms** | **1.9x faster** | 0.066 ms | 0.198 ms | Real-time (<1ms) |
+
+### Grand Multi-Dataset & 3-Model Benchmark (Lab 14 CCA)
+
+Across all three datasets and three classifiers (SVM, KNN, Random Forest) evaluated on unseen test splits:
+
+| Dataset Mode | Classes | Classifier Model | Accuracy | Macro Precision | Macro Recall | Macro F1-Score | Inference Latency |
+| :--- | :---: | :--- | :---: | :---: | :---: | :---: | :---: |
+| **Custom Lab Data** | 26 (`A-Z`) | **SVM (RBF Kernel)** | **99.70%** | **99.72%** | **99.69%** | **99.70%** | 0.240 ms |
+| **Custom Lab Data** | 26 (`A-Z`) | **KNN ($k=1$, Manhattan)** | **98.96%** | **99.01%** | **98.97%** | **98.98%** | 0.170 ms |
+| **Custom Lab Data** | 26 (`A-Z`) | **Random Forest (100 Trees)** | **99.35%** | **99.33%** | **99.31%** | **99.32%** | 0.180 ms |
+| **Kaggle Benchmark** | 26 (`A-Z`) | **SVM (RBF Kernel)** | **98.56%** | **98.60%** | **98.56%** | **98.57%** | 0.230 ms |
+| **Kaggle Benchmark** | 26 (`A-Z`) | **KNN ($k=1$, Manhattan)** | **92.60%** | **93.13%** | **92.60%** | **92.66%** | 0.140 ms |
+| **Kaggle Benchmark** | 26 (`A-Z`) | **Random Forest (100 Trees)** | **99.33%** | **99.34%** | **99.33%** | **99.33%** | 0.175 ms |
+| **ASL 36 Classes** | 36 (`0-9`, `A-Z`) | **SVM (RBF Kernel)** | **97.52%** | **97.77%** | **97.49%** | **97.48%** | 0.179 ms |
+| **ASL 36 Classes** | 36 (`0-9`, `A-Z`) | **KNN ($k=1$, Manhattan)** | **96.07%** | **96.37%** | **96.05%** | **96.06%** | 0.082 ms |
+| **ASL 36 Classes** | 36 (`0-9`, `A-Z`) | **Random Forest (100 Trees)** | **96.28%** | **96.62%** | **96.28%** | **96.27%** | 0.082 ms |
 
 > **Key Observation:** The tuned SVM achieved **99.78% test accuracy** on real webcam hand landmarks, misclassifying only 5 samples out of 2,224 test frames. Inference latency dropped from 0.579 ms to 0.305 ms because the optimal decision boundary requires fewer support vectors ($2,023$ vectors vs $3,450$).
 
@@ -249,8 +268,8 @@ python app.py
 ```
 
 #### Interactive Controls in Live Webcam View:
-* **`D`**: **Toggle Dataset Mode:** Switch between **`[CUSTOM LAB]`** (your tuned webcam dataset) and **`[KAGGLE BENCHMARK]`**.
-* **`M`**: **Toggle Classifier:** Switch between **`[SVM]`** (Tuned RBF, 99.78% acc) and **`[KNN]`** (Tuned Manhattan, 98.38% acc).
+* **`D`**: **Cycle Dataset Mode:** Switch between **`[KAGGLE BENCHMARK]`**, **`[CUSTOM LAB]`**, and **`[ASL 36 (0-9, A-Z)]`**.
+* **`M`**: **Cycle Classifier:** Switch between **`[SVM (RBF)]`**, **`[KNN (k=5)]`**, and **`[RANDOM FOREST]`**.
 * **`S`**: **Toggle Temporal Frame-Smoothing:** Switch smoothing `ON` (majority-vote queue) or `OFF` (instantaneous raw prediction).
 * **`C`**: **Clear Temporal Buffer:** Resets the 7-frame sliding window history.
 * **`Q` or `ESC`**: Exit application cleanly.

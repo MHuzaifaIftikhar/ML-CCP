@@ -46,14 +46,18 @@ from src.hand_tracker import HandTracker
 # =============================================================================
 def load_all_artifacts() -> Dict[str, Dict[str, Any]]:
     """
-    Loads model artifacts for both:
-      1. 'kaggle': Clean Kaggle Benchmark models
-      2. 'custom': Custom Lab Dataset models
+    Loads model artifacts for all 3 datasets:
+      1. 'kaggle': Clean Kaggle Benchmark models (A-Z)
+      2. 'custom': Custom Lab Dataset models (A-Z)
+      3. 'asl36': ASL 36 Classes Dataset models (0-9, A-Z)
+    Each bundle contains SVM, KNN, Random Forest, and StandardScaler.
     """
     artifacts = {}
 
     # Check and train if missing
-    if not config.KAGGLE_SVM_PATH.exists() or not config.CUSTOM_SVM_PATH.exists():
+    if (not config.KAGGLE_SVM_PATH.exists() or 
+        not config.CUSTOM_SVM_PATH.exists() or 
+        not config.ASL36_SVM_PATH.exists()):
         print("[!] Multi-dataset models not found in models/ directory.")
         print("[*] Initiating automated training pipeline for all datasets...")
         from src.train import run_cross_dataset_benchmarks
@@ -62,10 +66,12 @@ def load_all_artifacts() -> Dict[str, Dict[str, Any]]:
     # Load Kaggle artifacts
     try:
         artifacts["kaggle"] = {
-            "name": "Kaggle Benchmark",
+            "name": "Kaggle Benchmark (A-Z)",
             "svm": joblib.load(config.KAGGLE_SVM_PATH),
             "knn": joblib.load(config.KAGGLE_KNN_PATH),
-            "scaler": joblib.load(config.KAGGLE_SCALER_PATH)
+            "rf": joblib.load(config.KAGGLE_RF_PATH) if config.KAGGLE_RF_PATH.exists() else None,
+            "scaler": joblib.load(config.KAGGLE_SCALER_PATH),
+            "classes": 26
         }
         print(f"[+] Loaded Kaggle Benchmark artifacts from: {config.KAGGLE_MODELS_DIR}")
     except Exception as e:
@@ -74,22 +80,40 @@ def load_all_artifacts() -> Dict[str, Dict[str, Any]]:
     # Load Custom Lab artifacts
     try:
         artifacts["custom"] = {
-            "name": "Custom Lab Data",
+            "name": "Custom Lab Data (A-Z)",
             "svm": joblib.load(config.CUSTOM_SVM_PATH),
             "knn": joblib.load(config.CUSTOM_KNN_PATH),
-            "scaler": joblib.load(config.CUSTOM_SCALER_PATH)
+            "rf": joblib.load(config.CUSTOM_RF_PATH) if config.CUSTOM_RF_PATH.exists() else None,
+            "scaler": joblib.load(config.CUSTOM_SCALER_PATH),
+            "classes": 26
         }
         print(f"[+] Loaded Custom Lab artifacts from: {config.CUSTOM_MODELS_DIR}")
     except Exception as e:
         print(f"[!] Warning loading Custom artifacts: {e}")
 
-    # Fallback to top-level models if either is missing
+    # Load ASL 36-Classes artifacts
+    try:
+        artifacts["asl36"] = {
+            "name": "ASL 36 Classes (0-9, A-Z)",
+            "svm": joblib.load(config.ASL36_SVM_PATH),
+            "knn": joblib.load(config.ASL36_KNN_PATH),
+            "rf": joblib.load(config.ASL36_RF_PATH) if config.ASL36_RF_PATH.exists() else None,
+            "scaler": joblib.load(config.ASL36_SCALER_PATH),
+            "classes": 36
+        }
+        print(f"[+] Loaded ASL 36-Classes artifacts from: {config.ASL36_MODELS_DIR}")
+    except Exception as e:
+        print(f"[!] Warning loading ASL 36-Classes artifacts: {e}")
+
+    # Fallback to top-level models if needed
     if "kaggle" not in artifacts and config.SVM_MODEL_PATH.exists():
         artifacts["kaggle"] = {
-            "name": "Default Model",
+            "name": "Default Model (A-Z)",
             "svm": joblib.load(config.SVM_MODEL_PATH),
             "knn": joblib.load(config.KNN_MODEL_PATH),
-            "scaler": joblib.load(config.SCALER_PATH)
+            "rf": joblib.load(config.RF_MODEL_PATH) if config.RF_MODEL_PATH.exists() else None,
+            "scaler": joblib.load(config.SCALER_PATH),
+            "classes": 26
         }
 
     return artifacts
@@ -138,11 +162,14 @@ def run_realtime_translator():
 
     # 1. Load All Dataset Artifacts
     all_artifacts = load_all_artifacts()
-    available_datasets = list(all_artifacts.keys())
-    
+    available_datasets = [d for d in ["kaggle", "custom", "asl36"] if d in all_artifacts]
+    if not available_datasets:
+        available_datasets = list(all_artifacts.keys())
+
     # Default to Kaggle (clean benchmark) for optimal accuracy out of the box
     current_dataset = "kaggle" if "kaggle" in available_datasets else available_datasets[0]
-    current_model_type = "svm"  # 'svm' or 'knn'
+    available_models = ["svm", "knn", "rf"]
+    current_model_type = "svm"  # 'svm', 'knn', or 'rf'
 
     # 2. Initialize Universal Hand Tracker
     hand_tracker = HandTracker()
@@ -158,14 +185,14 @@ def run_realtime_translator():
 
     # 4. Open Webcam Feed
     cap = initialize_webcam()
-    window_name = "Dual-Dataset ASL Sign Language Translator (DUET AI-3202)"
+    window_name = "Multi-Dataset ASL Sign Language Translator (DUET AI-3202)"
     cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
     cv2.resizeWindow(window_name, config.FRAME_WIDTH, config.FRAME_HEIGHT)
 
     print("\n[INFO] Interactive Controls:")
     print("   * Press 'q' to Exit application.")
-    print("   * Press 'd' to Toggle Dataset Mode: [KAGGLE BENCHMARK] <-> [CUSTOM LAB].")
-    print("   * Press 'm' to Toggle Classifier: [SVM (RBF)] <-> [KNN (k=5)].")
+    print("   * Press 'd' to Cycle Dataset Mode: [KAGGLE] -> [CUSTOM] -> [ASL-36 (0-9, A-Z)].")
+    print("   * Press 'm' to Cycle Classifier: [SVM (RBF)] -> [KNN (k=5)] -> [RANDOM FOREST].")
     print("   * Press 's' to Toggle Temporal Frame Smoothing (ON / OFF).")
     print("   * Press 'c' to Clear temporal smoothing buffer.\n")
 
@@ -181,8 +208,9 @@ def run_realtime_translator():
 
             # Active model and scaler based on current selection
             active_bundle = all_artifacts[current_dataset]
-            active_model = active_bundle[current_model_type]
+            active_model = active_bundle.get(current_model_type) or active_bundle.get("svm")
             active_scaler = active_bundle["scaler"]
+            is_36_class = (active_bundle.get("classes", 26) == 36 or current_dataset == "asl36")
 
             # Process hand landmarks
             landmarks = hand_tracker.process(frame)
@@ -208,7 +236,11 @@ def run_realtime_translator():
                         pred_idx = int(active_model.predict(scaled_features)[0])
                         confidence = 1.0
 
-                    raw_letter = config.IDX_TO_LABEL.get(pred_idx, "?")
+                    # Map index to class label (26 letters vs 36 classes)
+                    if is_36_class:
+                        raw_letter = config.IDX_TO_LABEL_36.get(pred_idx, "?")
+                    else:
+                        raw_letter = config.IDX_TO_LABEL.get(pred_idx, "?")
 
                 except Exception as e:
                     print(f"[!] Inference error: {e}")
@@ -227,9 +259,23 @@ def run_realtime_translator():
 
             fps = fps_counter.update()
 
-            # Construct dynamic status badge: e.g. "KAGGLE | SVM (RBF)"
-            dataset_tag = "KAGGLE" if current_dataset == "kaggle" else "CUSTOM"
-            model_tag = "SVM" if current_model_type == "svm" else "KNN"
+            # Construct dynamic status badge: e.g. "[ASL-36] RANDOM FOREST"
+            if current_dataset == "asl36":
+                dataset_tag = "ASL-36"
+            elif current_dataset == "kaggle":
+                dataset_tag = "KAGGLE"
+            else:
+                dataset_tag = "CUSTOM"
+
+            if current_model_type == "svm":
+                model_tag = "SVM (RBF)"
+            elif current_model_type == "knn":
+                model_tag = "KNN (k=5)"
+            elif current_model_type == "rf":
+                model_tag = "RANDOM FOREST"
+            else:
+                model_tag = current_model_type.upper()
+
             smooth_tag = "" if temporal_smoothing_enabled else " (Raw)"
             display_model_name = f"[{dataset_tag}] {model_tag}{smooth_tag}"
 
@@ -252,13 +298,17 @@ def run_realtime_translator():
             if key == ord('q') or key == 27:
                 print("[*] Exit signal received. Shutting down...")
                 break
-            elif key == ord('d'):  # Toggle Dataset Mode (Kaggle <-> Custom)
+            elif key == ord('d'):  # Cycle Dataset Mode (Kaggle -> Custom -> ASL-36)
                 if len(available_datasets) > 1:
-                    current_dataset = "custom" if current_dataset == "kaggle" else "kaggle"
+                    curr_idx = available_datasets.index(current_dataset)
+                    current_dataset = available_datasets[(curr_idx + 1) % len(available_datasets)]
                     smoother.clear()
                     print(f"[*] Dataset Mode toggled to: {all_artifacts[current_dataset]['name'].upper()}")
-            elif key == ord('m'):  # Toggle Classifier (SVM <-> KNN)
-                current_model_type = "knn" if current_model_type == "svm" else "svm"
+            elif key == ord('m'):  # Cycle Classifier (SVM -> KNN -> Random Forest)
+                curr_model_idx = available_models.index(current_model_type)
+                current_model_type = available_models[(curr_model_idx + 1) % len(available_models)]
+                smoother.clear()
+                print(f"[*] Classifier toggled to: {current_model_type.upper()}")
                 smoother.clear()
                 print(f"[*] Classifier toggled to: {current_model_type.upper()}")
             elif key == ord('s'):  # Toggle Smoothing

@@ -26,26 +26,41 @@ from src.utils import TemporalSmoother, draw_hud_overlay
 
 
 def test_configuration():
-    print("[TEST 1/7] Testing configuration...")
+    print("[TEST 1/8] Testing configuration...")
     assert len(config.LABELS) == 26, f"Expected 26 labels, got {len(config.LABELS)}"
     assert config.TOTAL_FEATURES == 63, f"Expected 63 features, got {config.TOTAL_FEATURES}"
     assert config.NUM_CLASSES == 26
-    print("  --> PASS: Configuration verified.")
+    assert len(config.LABELS_36) == 36, f"Expected 36 labels, got {len(config.LABELS_36)}"
+    assert config.NUM_CLASSES_36 == 36
+    assert config.LABELS_36[:10] == [str(i) for i in range(10)]
+    assert config.LABELS_36[10:] == config.LABELS
+    print("  --> PASS: 26-class and 36-class configuration verified.")
 
 
 def test_dataset_integrity():
-    print("[TEST 2/7] Testing dataset integrity...")
+    print("[TEST 2/8] Testing dataset integrity across datasets...")
+    # 1. Custom Dataset
     assert config.RAW_CSV_PATH.exists(), f"Missing dataset at {config.RAW_CSV_PATH}"
-    df = pd.read_csv(config.RAW_CSV_PATH)
-    assert df.shape[1] == 64, f"Expected 64 columns (63 features + 1 label), got {df.shape[1]}"
-    assert df.isnull().sum().sum() == 0, "Dataset contains unexpected null values"
-    unique_labels = sorted(df[config.TARGET_COLUMN].unique())
-    assert unique_labels == config.LABELS, "Missing letters in dataset"
-    print(f"  --> PASS: Dataset intact ({df.shape[0]} samples across all 26 letters).")
+    df_custom = pd.read_csv(config.RAW_CSV_PATH)
+    assert df_custom.shape[1] == 64, f"Expected 64 columns, got {df_custom.shape[1]}"
+    assert df_custom.isnull().sum().sum() == 0, "Custom dataset contains unexpected null values"
+    assert sorted(df_custom[config.TARGET_COLUMN].unique()) == config.LABELS, "Missing letters in custom dataset"
+
+    # 2. ASL-36 Dataset
+    if config.ASL36_CSV_PATH.exists():
+        df_asl36 = pd.read_csv(config.ASL36_CSV_PATH)
+        assert df_asl36.shape[1] == 64, f"Expected 64 columns, got {df_asl36.shape[1]}"
+        assert df_asl36.isnull().sum().sum() == 0, "ASL-36 dataset contains null values"
+        unique_36 = sorted(df_asl36[config.TARGET_COLUMN].unique())
+        assert len(unique_36) == 36, f"Expected 36 classes, got {len(unique_36)}"
+        print(f"  --> PASS: ASL-36 dataset verified ({df_asl36.shape[0]} samples across all 36 classes).")
+
+    print(f"  --> PASS: Datasets intact ({df_custom.shape[0]} custom samples across all 26 letters).")
 
 
 def test_artifacts_loading():
-    print("[TEST 3/7] Testing saved model artifacts...")
+    print("[TEST 3/8] Testing saved model artifacts...")
+    # Custom/Default models
     assert config.SVM_MODEL_PATH.exists(), "Missing svm_model.pkl"
     assert config.KNN_MODEL_PATH.exists(), "Missing knn_model.pkl"
     assert config.SCALER_PATH.exists(), "Missing scaler.pkl"
@@ -57,12 +72,20 @@ def test_artifacts_loading():
     assert hasattr(svm, "predict_proba"), "SVM missing predict_proba"
     assert hasattr(knn, "predict"), "KNN missing predict"
     assert hasattr(scaler, "transform"), "Scaler missing transform"
-    print("  --> PASS: All artifacts load cleanly.")
-    return svm, knn, scaler
+
+    # RF model if trained
+    rf = None
+    if config.RF_MODEL_PATH.exists():
+        rf = joblib.load(config.RF_MODEL_PATH)
+        assert hasattr(rf, "predict"), "RF missing predict"
+        print("  --> PASS: Random Forest ensemble artifact loaded.")
+
+    print("  --> PASS: All standard artifacts load cleanly.")
+    return svm, knn, rf, scaler
 
 
 def test_landmark_normalization(scaler):
-    print("[TEST 4/7] Testing live landmark normalization pipeline...")
+    print("[TEST 4/8] Testing live landmark normalization pipeline...")
     # Mock 21 3D points
     mock_landmarks = np.random.uniform(-0.5, 0.5, size=(21, 3)).astype(np.float32)
     mock_landmarks[0] = [0.0, 0.0, 0.0]  # Wrist origin
@@ -73,8 +96,8 @@ def test_landmark_normalization(scaler):
     print("  --> PASS: Landmark normalization yields valid (1, 63) vector.")
 
 
-def test_model_inference(svm, knn, scaler):
-    print("[TEST 5/7] Testing live model inference...")
+def test_model_inference(svm, knn, rf, scaler):
+    print("[TEST 5/8] Testing live model inference across 3 models...")
     mock_landmarks = np.zeros((21, 3), dtype=np.float32)
     # Simulate an 'L' shape: index pointing up, thumb sideways
     mock_landmarks[4] = [-0.5, -0.3, 0.0]   # Thumb tip
@@ -83,16 +106,22 @@ def test_model_inference(svm, knn, scaler):
 
     scaled_feat = normalize_live_landmarks(mock_landmarks, scaler=scaler)
     
-    # SVM prediction
+    # 1. SVM prediction
     svm_probs = svm.predict_proba(scaled_feat)[0]
     assert len(svm_probs) == 26
     assert np.isclose(np.sum(svm_probs), 1.0, atol=1e-3), "Probabilities do not sum to 1.0"
     pred_class_svm = config.IDX_TO_LABEL[int(np.argmax(svm_probs))]
 
-    # KNN prediction
+    # 2. KNN prediction
     pred_class_knn = config.IDX_TO_LABEL[int(knn.predict(scaled_feat)[0])]
 
-    print(f"  --> PASS: SVM output letter '{pred_class_svm}' (conf: {np.max(svm_probs)*100:.1f}%), KNN output '{pred_class_knn}'.")
+    # 3. Random Forest prediction
+    rf_info = ""
+    if rf is not None:
+        pred_class_rf = config.IDX_TO_LABEL[int(rf.predict(scaled_feat)[0])]
+        rf_info = f", RF output '{pred_class_rf}'"
+
+    print(f"  --> PASS: SVM output '{pred_class_svm}' (conf: {np.max(svm_probs)*100:.1f}%), KNN output '{pred_class_knn}'{rf_info}.")
 
 
 def test_temporal_smoother():
@@ -137,11 +166,11 @@ if __name__ == "__main__":
     print("=" * 70)
     test_configuration()
     test_dataset_integrity()
-    svm, knn, scaler = test_artifacts_loading()
+    svm, knn, rf, scaler = test_artifacts_loading()
     test_landmark_normalization(scaler)
-    test_model_inference(svm, knn, scaler)
+    test_model_inference(svm, knn, rf, scaler)
     test_temporal_smoother()
     test_hud_rendering()
     print("=" * 70)
-    print("ALL 7 VERIFICATION TESTS PASSED SUCCESSFULLY! [100% OK]")
+    print("ALL 8 VERIFICATION TESTS PASSED SUCCESSFULLY! [100% OK]")
     print("=" * 70)

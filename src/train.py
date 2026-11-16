@@ -21,6 +21,7 @@ import numpy as np
 import pandas as pd
 from sklearn.svm import SVC
 from sklearn.neighbors import KNeighborsClassifier
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import (
     accuracy_score,
     precision_score,
@@ -127,6 +128,37 @@ def train_knn_classifier(
     return knn, train_time
 
 
+# =============================================================================
+# 3. ENSEMBLE CLASSIFIER: RANDOM FOREST (RF)
+# =============================================================================
+def train_rf_classifier(
+    X_train: np.ndarray,
+    y_train: np.ndarray,
+    n_estimators: int = config.RF_ESTIMATORS,
+    random_state: int = config.RF_RANDOM_STATE
+) -> Tuple[RandomForestClassifier, float]:
+    """
+    Trains an ensemble Random Forest classifier on 63-dimensional landmark features.
+    """
+    print("\n" + "=" * 70)
+    print("TRAINING ENSEMBLE: RANDOM FOREST (RF) CLASSIFIER")
+    print(f"Hyperparameters: n_estimators={n_estimators}, random_state={random_state}")
+    print("=" * 70)
+
+    rf = RandomForestClassifier(
+        n_estimators=n_estimators,
+        random_state=random_state,
+        n_jobs=-1
+    )
+
+    t0 = time.time()
+    rf.fit(X_train, y_train)
+    train_time = time.time() - t0
+
+    print(f"[+] Random Forest training completed in {train_time:.3f} seconds.")
+    return rf, train_time
+
+
 def evaluate_knn_k_range(
     X_train: np.ndarray,
     y_train: np.ndarray,
@@ -186,7 +218,9 @@ def evaluate_model(
     f1_m = f1_score(y_test, y_pred, average='macro', zero_division=0)
     f1_w = f1_score(y_test, y_pred, average='weighted', zero_division=0)
     cm = confusion_matrix(y_test, y_pred)
-    clf_report = classification_report(y_test, y_pred, target_names=config.LABELS, zero_division=0)
+    num_classes = max(len(np.unique(y_test)), int(np.max(y_test)) + 1, int(np.max(y_pred)) + 1)
+    target_names = config.LABELS_36 if num_classes > 26 else config.LABELS
+    clf_report = classification_report(y_test, y_pred, target_names=target_names[:num_classes], zero_division=0)
 
     metrics = {
         "model_name": model_name,
@@ -214,28 +248,50 @@ def evaluate_model(
 
 def print_side_by_side_comparison(
     metrics_svm: Dict[str, Any],
-    metrics_knn: Dict[str, Any]
+    metrics_knn: Dict[str, Any],
+    metrics_rf: Optional[Dict[str, Any]] = None
 ) -> None:
-    """Prints side-by-side comparative table of SVM vs KNN."""
-    print("\n" + "=" * 78)
-    print("LAB 14 COMPLEX COMPUTING ACTIVITY (CCA): SIDE-BY-SIDE MODEL BENCHMARK")
-    print("=" * 78)
-    header = f"{'Metric':<26} | {'SVM (Lab 06 - RBF)':<24} | {'KNN (Lab 08 - k=5)':<22}"
-    print(header)
-    print("-" * 78)
+    """Prints side-by-side comparative table of SVM vs KNN vs Random Forest."""
+    if metrics_rf is not None:
+        print("\n" + "=" * 105)
+        print("LAB 14 COMPLEX COMPUTING ACTIVITY (CCA): SIDE-BY-SIDE 3-MODEL BENCHMARK")
+        print("=" * 105)
+        header = f"{'Metric':<24} | {'SVM (Lab 06 - RBF)':<24} | {'KNN (Lab 08 - k=5)':<22} | {'Random Forest (100 Trees)':<26}"
+        print(header)
+        print("-" * 105)
 
-    rows = [
-        ("Accuracy", f"{metrics_svm['accuracy']*100:.2f}%", f"{metrics_knn['accuracy']*100:.2f}%"),
-        ("Macro Precision", f"{metrics_svm['precision_macro']*100:.2f}%", f"{metrics_knn['precision_macro']*100:.2f}%"),
-        ("Macro Recall", f"{metrics_svm['recall_macro']*100:.2f}%", f"{metrics_knn['recall_macro']*100:.2f}%"),
-        ("Macro F1-Score", f"{metrics_svm['f1_macro']*100:.2f}%", f"{metrics_knn['f1_macro']*100:.2f}%"),
-        ("Weighted F1-Score", f"{metrics_svm['f1_weighted']*100:.2f}%", f"{metrics_knn['f1_weighted']*100:.2f}%"),
-        ("Inference Latency", f"{metrics_svm['inference_latency_ms']:.3f} ms", f"{metrics_knn['inference_latency_ms']:.3f} ms")
-    ]
+        rows = [
+            ("Accuracy", f"{metrics_svm['accuracy']*100:.2f}%", f"{metrics_knn['accuracy']*100:.2f}%", f"{metrics_rf['accuracy']*100:.2f}%"),
+            ("Macro Precision", f"{metrics_svm['precision_macro']*100:.2f}%", f"{metrics_knn['precision_macro']*100:.2f}%", f"{metrics_rf['precision_macro']*100:.2f}%"),
+            ("Macro Recall", f"{metrics_svm['recall_macro']*100:.2f}%", f"{metrics_knn['recall_macro']*100:.2f}%", f"{metrics_rf['recall_macro']*100:.2f}%"),
+            ("Macro F1-Score", f"{metrics_svm['f1_macro']*100:.2f}%", f"{metrics_knn['f1_macro']*100:.2f}%", f"{metrics_rf['f1_macro']*100:.2f}%"),
+            ("Weighted F1-Score", f"{metrics_svm['f1_weighted']*100:.2f}%", f"{metrics_knn['f1_weighted']*100:.2f}%", f"{metrics_rf['f1_weighted']*100:.2f}%"),
+            ("Inference Latency", f"{metrics_svm['inference_latency_ms']:.3f} ms", f"{metrics_knn['inference_latency_ms']:.3f} ms", f"{metrics_rf['inference_latency_ms']:.3f} ms")
+        ]
 
-    for label, val_svm, val_knn in rows:
-        print(f"{label:<26} | {val_svm:<24} | {val_knn:<22}")
-    print("=" * 78)
+        for label, val_svm, val_knn, val_rf in rows:
+            print(f"{label:<24} | {val_svm:<24} | {val_knn:<22} | {val_rf:<26}")
+        print("=" * 105)
+    else:
+        print("\n" + "=" * 78)
+        print("LAB 14 COMPLEX COMPUTING ACTIVITY (CCA): SIDE-BY-SIDE MODEL BENCHMARK")
+        print("=" * 78)
+        header = f"{'Metric':<26} | {'SVM (Lab 06 - RBF)':<24} | {'KNN (Lab 08 - k=5)':<22}"
+        print(header)
+        print("-" * 78)
+
+        rows = [
+            ("Accuracy", f"{metrics_svm['accuracy']*100:.2f}%", f"{metrics_knn['accuracy']*100:.2f}%"),
+            ("Macro Precision", f"{metrics_svm['precision_macro']*100:.2f}%", f"{metrics_knn['precision_macro']*100:.2f}%"),
+            ("Macro Recall", f"{metrics_svm['recall_macro']*100:.2f}%", f"{metrics_knn['recall_macro']*100:.2f}%"),
+            ("Macro F1-Score", f"{metrics_svm['f1_macro']*100:.2f}%", f"{metrics_knn['f1_macro']*100:.2f}%"),
+            ("Weighted F1-Score", f"{metrics_svm['f1_weighted']*100:.2f}%", f"{metrics_knn['f1_weighted']*100:.2f}%"),
+            ("Inference Latency", f"{metrics_svm['inference_latency_ms']:.3f} ms", f"{metrics_knn['inference_latency_ms']:.3f} ms")
+        ]
+
+        for label, val_svm, val_knn in rows:
+            print(f"{label:<26} | {val_svm:<24} | {val_knn:<22}")
+        print("=" * 78)
 
 
 # =============================================================================
@@ -244,11 +300,18 @@ def print_side_by_side_comparison(
 def train_dataset_models(
     dataset_name: str = "custom",
     apply_anomaly_filter: bool = True
-) -> Tuple[Dict[str, Any], Dict[str, Any]]:
+) -> Tuple[Dict[str, Any], Dict[str, Any], Dict[str, Any]]:
     """
-    Executes training and evaluation for a specific dataset ('custom' or 'kaggle').
+    Executes training and evaluation for a specific dataset ('custom', 'kaggle', or 'asl36').
+    Trains SVM (Lab 06), KNN (Lab 08), and Random Forest (Ensemble).
     """
-    mode_label = "CUSTOM LAB DATASET" if dataset_name.lower() == "custom" else "KAGGLE BENCHMARK DATASET"
+    if dataset_name.lower() == "kaggle":
+        mode_label = "KAGGLE BENCHMARK DATASET"
+    elif dataset_name.lower() == "asl36":
+        mode_label = "ASL 36 CLASSES DATASET"
+    else:
+        mode_label = "CUSTOM LAB DATASET"
+
     print("\n" + "=" * 80)
     print(f"PIPELINE EXECUTION FOR: {mode_label}")
     print("=" * 80)
@@ -266,113 +329,153 @@ def train_dataset_models(
     knn_model, knn_train_time = train_knn_classifier(X_train, y_train)
     evaluate_knn_k_range(X_train, y_train, X_test, y_test, dataset_name=dataset_name)
 
-    # Step 4: Model Evaluations
+    # Step 4: Random Forest Classifier Training (Ensemble)
+    rf_model, rf_train_time = train_rf_classifier(X_train, y_train)
+
+    # Step 5: Model Evaluations
     metrics_svm = evaluate_model(svm_model, X_test, y_test, model_name=f"SVM ({mode_label})")
     metrics_knn = evaluate_model(knn_model, X_test, y_test, model_name=f"KNN ({mode_label})")
+    metrics_rf = evaluate_model(rf_model, X_test, y_test, model_name=f"RF ({mode_label})")
 
-    # Side-by-side terminal comparison
-    print_side_by_side_comparison(metrics_svm, metrics_knn)
+    # Side-by-side terminal comparison across all 3 models
+    print_side_by_side_comparison(metrics_svm, metrics_knn, metrics_rf)
 
     # Output directories and paths
     if dataset_name.lower() == "kaggle":
         target_dir = config.KAGGLE_MODELS_DIR
         cm_svm_path = config.REPORTS_DIR / "confusion_matrix_svm_kaggle.png"
         cm_knn_path = config.REPORTS_DIR / "confusion_matrix_knn_kaggle.png"
+        cm_rf_path = config.REPORTS_DIR / "confusion_matrix_rf_kaggle.png"
         comp_plot_path = config.REPORTS_DIR / "model_comparison_kaggle.png"
+        eval_labels = config.LABELS
+    elif dataset_name.lower() == "asl36":
+        target_dir = config.ASL36_MODELS_DIR
+        cm_svm_path = config.REPORTS_DIR / "confusion_matrix_svm_asl36.png"
+        cm_knn_path = config.REPORTS_DIR / "confusion_matrix_knn_asl36.png"
+        cm_rf_path = config.REPORTS_DIR / "confusion_matrix_rf_asl36.png"
+        comp_plot_path = config.REPORTS_DIR / "model_comparison_asl36.png"
+        eval_labels = config.LABELS_36
     else:
         target_dir = config.CUSTOM_MODELS_DIR
         cm_svm_path = config.CONFUSION_MATRIX_SVM_PATH
         cm_knn_path = config.CONFUSION_MATRIX_KNN_PATH
+        cm_rf_path = config.REPORTS_DIR / "confusion_matrix_rf.png"
         comp_plot_path = config.MODEL_COMPARISON_PLOT_PATH
+        eval_labels = config.LABELS
 
     target_dir.mkdir(parents=True, exist_ok=True)
 
     # Generate and save visual confusion matrices
     plot_confusion_matrix(
         metrics_svm["confusion_matrix"],
-        labels=config.LABELS,
+        labels=eval_labels,
         title=f"Lab 06: SVM Confusion Matrix ({mode_label})",
         save_path=cm_svm_path
     )
     plot_confusion_matrix(
         metrics_knn["confusion_matrix"],
-        labels=config.LABELS,
+        labels=eval_labels,
         title=f"Lab 08: KNN Confusion Matrix ({mode_label})",
         save_path=cm_knn_path
     )
+    plot_confusion_matrix(
+        metrics_rf["confusion_matrix"],
+        labels=eval_labels,
+        title=f"Ensemble: Random Forest Confusion Matrix ({mode_label})",
+        save_path=cm_rf_path
+    )
 
-    # Model comparison bar chart for this dataset
+    # 3-Model comparison bar chart for this dataset
     comparison_dict = {
         "SVM (Lab 06)": metrics_svm,
-        "KNN (Lab 08)": metrics_knn
+        "KNN (Lab 08)": metrics_knn,
+        "Random Forest": metrics_rf
     }
     plot_model_comparison(comparison_dict, save_path=comp_plot_path)
 
-    # Step 5: Save Model Artifacts
+    # Step 6: Save Model Artifacts
     svm_path = target_dir / "svm_model.pkl"
     knn_path = target_dir / "knn_model.pkl"
+    rf_path = target_dir / "rf_model.pkl"
     scaler_path = target_dir / "scaler.pkl"
 
     joblib.dump(svm_model, svm_path)
     joblib.dump(knn_model, knn_path)
+    joblib.dump(rf_model, rf_path)
     joblib.dump(scaler, scaler_path)
 
-    # Also save to default models directory for backward compatibility
-    joblib.dump(svm_model, config.SVM_MODEL_PATH)
-    joblib.dump(knn_model, config.KNN_MODEL_PATH)
-    joblib.dump(scaler, config.SCALER_PATH)
+    # If custom dataset, also update default top-level models directory
+    if dataset_name.lower() == "custom":
+        joblib.dump(svm_model, config.SVM_MODEL_PATH)
+        joblib.dump(knn_model, config.KNN_MODEL_PATH)
+        joblib.dump(rf_model, config.RF_MODEL_PATH)
+        joblib.dump(scaler, config.SCALER_PATH)
 
-    print(f"\n[+] Saved {mode_label} artifacts to: {target_dir}")
-    return metrics_svm, metrics_knn
+    print(f"\n[+] Saved {mode_label} artifacts (SVM, KNN, RF, Scaler) to: {target_dir}")
+    return metrics_svm, metrics_knn, metrics_rf
 
 
 def run_cross_dataset_benchmarks():
     """
-    Executes end-to-end benchmarks on BOTH datasets:
-      1. Custom Lab Dataset (with automated anomaly cleaning)
-      2. Kaggle Benchmark Dataset
-    Prints a comprehensive 4-way comparison table and saves a cross-dataset visualization.
+    Executes end-to-end benchmarks across ALL 3 datasets with ALL 3 models:
+      1. Custom Lab Dataset (Webcam with automated anomaly cleaning)
+      2. Kaggle Benchmark Dataset (Clean A-Z)
+      3. ASL 36 Classes Dataset (Digits 0-9 + Letters A-Z)
+    Prints a 9-way comparison table and saves a multi-dataset visualization.
     """
-    print("=" * 84)
-    print("ASL SIGN TRANSLATOR: DUAL-DATASET BENCHMARK PIPELINE (Lab 14 CCA)")
+    print("=" * 88)
+    print("ASL SIGN TRANSLATOR: TRI-DATASET & 3-MODEL BENCHMARK PIPELINE (Lab 14 CCA)")
     print("DUET AI-3202 Machine Learning Practical Manual")
-    print("=" * 84)
+    print("=" * 88)
 
-    # Train on Cleaned Custom Dataset
-    custom_svm, custom_knn = train_dataset_models("custom", apply_anomaly_filter=True)
+    # 1. Custom Lab Dataset (26 classes, webcam)
+    custom_svm, custom_knn, custom_rf = train_dataset_models("custom", apply_anomaly_filter=True)
 
-    # Train on Kaggle Benchmark Dataset
-    kaggle_svm, kaggle_knn = train_dataset_models("kaggle", apply_anomaly_filter=False)
+    # 2. Kaggle Benchmark Dataset (26 classes, clean)
+    kaggle_svm, kaggle_knn, kaggle_rf = train_dataset_models("kaggle", apply_anomaly_filter=False)
 
-    # Grand Cross-Dataset Comparison Table
-    print("\n" + "=" * 84)
-    print("GRAND CROSS-DATASET EVALUATION BENCHMARK (Lab 14 CCA)")
-    print("=" * 84)
-    header = f"{'Configuration':<26} | {'Accuracy':<12} | {'Precision':<12} | {'Recall':<12} | {'F1-Score':<12}"
+    # 3. ASL 36 Classes Dataset (36 classes: 0-9 & A-Z)
+    asl36_svm, asl36_knn, asl36_rf = train_dataset_models("asl36", apply_anomaly_filter=False)
+
+    # Grand Cross-Dataset Comparison Table (9 configurations)
+    print("\n" + "=" * 90)
+    print("GRAND CROSS-DATASET & MULTI-MODEL EVALUATION BENCHMARK (Lab 14 CCA)")
+    print("=" * 90)
+    header = f"{'Configuration':<28} | {'Accuracy':<12} | {'Precision':<12} | {'Recall':<12} | {'F1-Score':<12}"
     print(header)
-    print("-" * 84)
+    print("-" * 90)
 
     benchmarks = [
         ("Custom Lab - SVM", custom_svm),
         ("Custom Lab - KNN", custom_knn),
+        ("Custom Lab - Random Forest", custom_rf),
         ("Kaggle Benchmark - SVM", kaggle_svm),
         ("Kaggle Benchmark - KNN", kaggle_knn),
+        ("Kaggle Benchmark - Random Forest", kaggle_rf),
+        ("ASL 36 - SVM", asl36_svm),
+        ("ASL 36 - KNN", asl36_knn),
+        ("ASL 36 - Random Forest", asl36_rf),
     ]
 
     for name, m in benchmarks:
-        print(f"{name:<26} | {m['accuracy']*100:>10.2f}% | {m['precision_macro']*100:>10.2f}% | {m['recall_macro']*100:>10.2f}% | {m['f1_macro']*100:>10.2f}%")
+        print(f"{name:<28} | {m['accuracy']*100:>10.2f}% | {m['precision_macro']*100:>10.2f}% | {m['recall_macro']*100:>10.2f}% | {m['f1_macro']*100:>10.2f}%")
 
-    print("=" * 84)
+    print("=" * 90)
 
     # Plot Cross-Dataset Bar Chart
     benchmark_dict = {
         "Custom (SVM)": custom_svm,
         "Custom (KNN)": custom_knn,
+        "Custom (RF)": custom_rf,
         "Kaggle (SVM)": kaggle_svm,
         "Kaggle (KNN)": kaggle_knn,
+        "Kaggle (RF)": kaggle_rf,
+        "ASL-36 (SVM)": asl36_svm,
+        "ASL-36 (KNN)": asl36_knn,
+        "ASL-36 (RF)": asl36_rf,
     }
     plot_cross_dataset_comparison(benchmark_dict, save_path=config.DATASET_COMPARISON_PLOT_PATH)
-    print(f"[+] Multi-dataset comparison plot saved to: {config.DATASET_COMPARISON_PLOT_PATH}")
+    print(f"[+] Tri-dataset comparison plot saved to: {config.DATASET_COMPARISON_PLOT_PATH}")
 
 
 if __name__ == "__main__":
@@ -381,8 +484,8 @@ if __name__ == "__main__":
         "--dataset",
         type=str,
         default="all",
-        choices=["custom", "kaggle", "all"],
-        help="Dataset to train on: 'custom', 'kaggle', or 'all' (default: all)"
+        choices=["custom", "kaggle", "asl36", "all"],
+        help="Dataset to train on: 'custom', 'kaggle', 'asl36', or 'all' (default: all)"
     )
     parser.add_argument(
         "--tune",
