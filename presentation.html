@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ASL Sign Language Translator — Model Evaluation &amp; Presentation (DUET AI-3202)</title>
+  <style>
+    :root {
+      --bg: #0b1120;
+      --card: #111a2e;
+      --border: #233354;
+      --accent: #38bdf8;
+      --green: #22c55e;
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      padding: 28px;
+    }
+    .container { max-width: 1200px; margin: 0 auto; }
+    header {
+      background: linear-gradient(135deg, #111a2e 0%, #172544 100%);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 28px 32px;
+      margin-bottom: 24px;
+    }
+    .badge {
+      display: inline-block;
+      background: rgba(56, 189, 248, 0.15);
+      color: var(--accent);
+      border: 1px solid rgba(56, 189, 248, 0.35);
+      padding: 4px 12px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      margin-bottom: 10px;
+    }
+    h1 { font-size: 28px; margin-bottom: 6px; color: #fff; }
+    .meta { color: var(--muted); font-size: 14px; }
+    .meta strong { color: var(--text); }
+
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .kpi {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 18px 20px;
+    }
+    .kpi-label { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.6px; }
+    .kpi-val { font-size: 28px; font-weight: 700; color: var(--green); margin-top: 4px; }
+    .kpi-sub { font-size: 12px; color: var(--accent); margin-top: 2px; }
+
+    .tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .tab-btn {
+      background: var(--card);
+      color: var(--muted);
+      border: 1px solid var(--border);
+      padding: 10px 18px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      transition: all 0.15s ease;
+    }
+    .tab-btn:hover { color: #fff; border-color: var(--accent); }
+    .tab-btn.active { background: var(--accent); color: #07111e; border-color: var(--accent); }
+
+    .panel {
+      display: none;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 24px;
+      margin-bottom: 24px;
+    }
+    .panel.active { display: block; }
+    h2 { font-size: 20px; margin-bottom: 14px; color: #fff; }
+    p { color: var(--muted); margin-bottom: 14px; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 14px 0 20px;
+      font-size: 14px;
+    }
+    th, td {
+      padding: 12px 14px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    th { color: var(--accent); font-weight: 600; background: rgba(15, 23, 42, 0.6); }
+    tr:hover td { background: rgba(56, 189, 248, 0.05); }
+
+    .graph-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(480px, 1fr));
+      gap: 20px;
+    }
+    .graph-card {
+      background: #0d1526;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+    }
+    .graph-card h3 { font-size: 15px; color: var(--accent); margin-bottom: 10px; }
+    .graph-card img {
+      width: 100%;
+      height: auto;
+      border-radius: 8px;
+      background: #fff;
+      cursor: zoom-in;
+    }
+    .pipeline-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 14px;
+      margin-top: 12px;
+    }
+    .step-box {
+      background: #0d1526;
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--accent);
+      border-radius: 8px;
+      padding: 14px 16px;
+    }
+    .step-box strong { color: #fff; display: block; margin-bottom: 4px; }
+    .step-box span { color: var(--muted); font-size: 13px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="badge">DUET AI-3202 • COMPLEX COMPUTING ACTIVITY (LAB 14)</div>
+      <h1>Real-Time ASL Sign Language to English Translator with Speech</h1>
+      <div class="meta">
+        <strong>Student:</strong> Muhammad Huzaifa Iftikhar (Batch 2024-F, Dept. of AI) &nbsp;|&nbsp;
+        <strong>Instructor:</strong> Engr. Hamza Farooqui &nbsp;|&nbsp;
+        <strong>Dataset:</strong> 12,026 Custom Webcam Samples (26 Classes: A–Z)
+      </div>
+    </header>
+
+    <div class="kpi-grid">
+      <div class="kpi">
+        <div class="kpi-label">Tuned SVM Accuracy (Lab 06)</div>
+        <div class="kpi-val">99.70%</div>
+        <div class="kpi-sub">RBF Kernel • C=20.0, γ=0.05</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Tuned KNN Accuracy (Lab 08)</div>
+        <div class="kpi-val">98.96%</div>
+        <div class="kpi-sub">Manhattan L1 • k=1, Uniform</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Inference Latency</div>
+        <div class="kpi-val">0.21 ms</div>
+        <div class="kpi-sub">30+ FPS Real-Time AR HUD</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Cleaned Training Samples</div>
+        <div class="kpi-val">11,547</div>
+        <div class="kpi-sub">479 transition outliers filtered</div>
+      </div>
+    </div>
+
+    <div class="tabs">
+      <button class="tab-btn active" onclick="showTab('metrics', this)">1. Model Benchmarks</button>
+      <button class="tab-btn" onclick="showTab('cm', this)">2. Confusion Matrices</button>
+      <button class="tab-btn" onclick="showTab('tuning', this)">3. Hyperparameter Tuning</button>
+      <button class="tab-btn" onclick="showTab('arch', this)">4. Pipeline &amp; Features</button>
+    </div>
+
+    <!-- TAB 1: MODEL BENCHMARKS -->
+    <div id="metrics" class="panel active">
+      <h2>Side-by-Side Model Evaluation (Custom Lab Dataset)</h2>
+      <p>Both classifiers were trained on 9,237 standardized 63-D hand landmark vectors and evaluated on 2,310 unseen test samples (stratified 80/20 split).</p>
+      <table>
+        <thead>
+          <tr>
+            <th>Evaluation Metric</th>
+            <th>SVM (Lab 06 — Tuned RBF)</th>
+            <th>KNN (Lab 08 — Tuned Manhattan)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>Test Accuracy</strong></td><td><strong>99.70%</strong></td><td>98.96%</td></tr>
+          <tr><td><strong>Macro Precision</strong></td><td><strong>99.72%</strong></td><td>99.01%</td></tr>
+          <tr><td><strong>Macro Recall</strong></td><td><strong>99.69%</strong></td><td>98.97%</td></tr>
+          <tr><td><strong>Macro F1-Score</strong></td><td><strong>99.70%</strong></td><td>98.98%</td></tr>
+          <tr><td><strong>Weighted F1-Score</strong></td><td><strong>99.70%</strong></td><td>98.96%</td></tr>
+          <tr><td><strong>Avg Inference Time</strong></td><td>0.212 ms / sample</td><td><strong>0.143 ms / sample</strong></td></tr>
+        </tbody>
+      </table>
+      <div class="graph-grid">
+        <div class="graph-card">
+          <h3>SVM vs KNN Performance Comparison</h3>
+          <img src="data/processed/reports/model_comparison.png" alt="Model Comparison" />
+        </div>
+        <div class="graph-card">
+          <h3>Cross-Dataset Mode Comparison (Custom vs Kaggle)</h3>
+          <img src="data/processed/reports/dataset_mode_comparison.png" alt="Dataset Comparison" />
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 2: CONFUSION MATRICES -->
+    <div id="cm" class="panel">
+      <h2>26-Class Confusion Matrices (A–Z)</h2>
+      <p>Per-letter classification breakdown across all 26 American Sign Language alphabet gestures.</p>
+      <div class="graph-grid">
+        <div class="graph-card">
+          <h3>Lab 06: SVM (RBF Kernel) Confusion Matrix</h3>
+          <img src="data/processed/reports/confusion_matrix_svm.png" alt="SVM Confusion Matrix" />
+        </div>
+        <div class="graph-card">
+          <h3>Lab 08: KNN (Manhattan) Confusion Matrix</h3>
+          <img src="data/processed/reports/confusion_matrix_knn.png" alt="KNN Confusion Matrix" />
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 3: HYPERPARAMETER TUNING -->
+    <div id="tuning" class="panel">
+      <h2>5-Fold Stratified GridSearchCV Optimization</h2>
+      <p>Systematic hyperparameter search across SVM kernels/C/gamma and KNN neighbors/metrics/weights.</p>
+      <div class="graph-grid">
+        <div class="graph-card">
+          <h3>SVM GridSearchCV Accuracy Heatmap</h3>
+          <img src="data/processed/reports/svm_gridsearch_heatmap.png" alt="SVM Heatmap" />
+        </div>
+        <div class="graph-card">
+          <h3>KNN K-Sensitivity &amp; Metric Curves</h3>
+          <img src="data/processed/reports/knn_tuning_curves.png" alt="KNN Tuning Curves" />
+        </div>
+        <div class="graph-card">
+          <h3>Baseline vs Tuned Gain (+3.24% on SVM)</h3>
+          <img src="data/processed/reports/baseline_vs_tuned_comparison.png" alt="Baseline vs Tuned" />
+        </div>
+        <div class="graph-card">
+          <h3>KNN K-Sensitivity on Current Split</h3>
+          <img src="data/processed/reports/knn_k_sensitivity.png" alt="KNN K Sensitivity" />
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 4: PIPELINE & LIVE FEATURES -->
+    <div id="arch" class="panel">
+      <h2>End-to-End Lab Alignment &amp; Interactive Features</h2>
+      <div class="pipeline-list">
+        <div class="step-box">
+          <strong>Lab 01: Preprocessing &amp; Invariance</strong>
+          <span>21 3D landmarks translated relative to wrist, scaled by palm size (63 features), outlier-trimmed (std=2.2), and Z-score standardized.</span>
+        </div>
+        <div class="step-box">
+          <strong>Lab 06: Non-Linear SVM</strong>
+          <span>RBF kernel projects 63-D keypoints into high-dimensional space with Platt probability calibration for live confidence bars.</span>
+        </div>
+        <div class="step-box">
+          <strong>Lab 08: K-Nearest Neighbors</strong>
+          <span>Manhattan (L1) distance metric mitigates high-dimensionality effects in 63-D space with sub-millisecond prediction.</span>
+        </div>
+        <div class="step-box">
+          <strong>Lab 13 &amp; 14: AR HUD, Suggestions &amp; Speech</strong>
+          <span>7-frame temporal smoother eliminates flicker; touch/click sentence suggestions + offline Text-to-Speech speak completed phrases aloud.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function showTab(id, btn) {
+      document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+      btn.classList.add('active');
+    }
+  </script>
+</body>
+</html>

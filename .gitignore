@@ -44,3 +44,7 @@ data/raw_csv/backup_before_clearing_*.csv
 
 # Scratch directory
 scratch/
+
+# Local environment secrets (never commit API keys)
+.env
+.env.*

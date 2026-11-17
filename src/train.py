@@ -317,10 +317,11 @@ def train_dataset_models(
     joblib.dump(knn_model, knn_path)
     joblib.dump(scaler, scaler_path)
 
-    # Also save to default models directory for backward compatibility
-    joblib.dump(svm_model, config.SVM_MODEL_PATH)
-    joblib.dump(knn_model, config.KNN_MODEL_PATH)
-    joblib.dump(scaler, config.SCALER_PATH)
+    # Save to default models directory when training custom dataset
+    if dataset_name.lower() == "custom":
+        joblib.dump(svm_model, config.SVM_MODEL_PATH)
+        joblib.dump(knn_model, config.KNN_MODEL_PATH)
+        joblib.dump(scaler, config.SCALER_PATH)
 
     print(f"\n[+] Saved {mode_label} artifacts to: {target_dir}")
     return metrics_svm, metrics_knn
@@ -380,9 +381,9 @@ if __name__ == "__main__":
     parser.add_argument(
         "--dataset",
         type=str,
-        default="all",
+        default="custom",
         choices=["custom", "kaggle", "all"],
-        help="Dataset to train on: 'custom', 'kaggle', or 'all' (default: all)"
+        help="Dataset to train on: 'custom' (default), 'kaggle', or 'all'"
     )
     parser.add_argument(
         "--tune",

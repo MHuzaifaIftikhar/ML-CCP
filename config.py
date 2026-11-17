@@ -134,13 +134,13 @@ TARGET_FPS = 30            # Target frame rate
 
 # MediaPipe Hands Detector Parameters
 MP_MAX_NUM_HANDS = 1       # Track single dominant hand for sign translation
-MP_MIN_DETECTION_CONFIDENCE = 0.70
-MP_MIN_TRACKING_CONFIDENCE = 0.70
+MP_MIN_DETECTION_CONFIDENCE = 0.50  # Lowered from 0.70 for robust tracking in varied lighting
+MP_MIN_TRACKING_CONFIDENCE = 0.50
 
 # Temporal Smoothing Engine (Lab 13 / Lab 14 CCA)
 SMOOTHING_WINDOW_SIZE = 7       # Sliding window size for majority voting queue
-CONFIDENCE_THRESHOLD = 0.60    # Minimum probability required to accept prediction
-CONSECUTIVE_STABLE_FRAMES = 4  # Frames required to mark gesture as stable
+CONFIDENCE_THRESHOLD = 0.50    # Minimum probability required to accept prediction
+CONSECUTIVE_STABLE_FRAMES = 3  # Responsive stabilization without sluggish delay
 
 # UI Overlay Styling & Colors (BGR format for OpenCV)
 COLOR_BACKGROUND = (20, 20, 20)        # Dark gray HUD background
