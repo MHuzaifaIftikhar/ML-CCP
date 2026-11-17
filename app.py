@@ -162,12 +162,12 @@ def run_realtime_translator():
 
     # 1. Load All Dataset Artifacts
     all_artifacts = load_all_artifacts()
-    available_datasets = [d for d in ["asl36", "kaggle", "custom"] if d in all_artifacts]
+    available_datasets = [d for d in ["kaggle", "custom", "asl36"] if d in all_artifacts]
     if not available_datasets:
         available_datasets = list(all_artifacts.keys())
 
-    # Default to ASL 36-Classes (0-9 Digits + A-Z Letters)
-    current_dataset = "asl36" if "asl36" in available_datasets else available_datasets[0]
+    # Default to Kaggle (clean benchmark) for optimal accuracy out of the box
+    current_dataset = "kaggle" if "kaggle" in available_datasets else available_datasets[0]
     available_models = ["svm", "knn", "rf"]
     current_model_type = "svm"  # 'svm', 'knn', or 'rf'
 

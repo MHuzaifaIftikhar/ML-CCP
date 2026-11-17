@@ -106,24 +106,19 @@ def test_model_inference(svm, knn, rf, scaler):
 
     scaled_feat = normalize_live_landmarks(mock_landmarks, scaler=scaler)
     
-    # Check num classes
-    n_classes = len(svm.classes_)
-    assert n_classes in (26, 36), f"Expected 26 or 36 classes, got {n_classes}"
-    idx_map = config.IDX_TO_LABEL_36 if n_classes == 36 else config.IDX_TO_LABEL
-
     # 1. SVM prediction
     svm_probs = svm.predict_proba(scaled_feat)[0]
-    assert len(svm_probs) == n_classes
+    assert len(svm_probs) == 26
     assert np.isclose(np.sum(svm_probs), 1.0, atol=1e-3), "Probabilities do not sum to 1.0"
-    pred_class_svm = idx_map[int(np.argmax(svm_probs))]
+    pred_class_svm = config.IDX_TO_LABEL[int(np.argmax(svm_probs))]
 
     # 2. KNN prediction
-    pred_class_knn = idx_map[int(knn.predict(scaled_feat)[0])]
+    pred_class_knn = config.IDX_TO_LABEL[int(knn.predict(scaled_feat)[0])]
 
     # 3. Random Forest prediction
     rf_info = ""
     if rf is not None:
-        pred_class_rf = idx_map[int(rf.predict(scaled_feat)[0])]
+        pred_class_rf = config.IDX_TO_LABEL[int(rf.predict(scaled_feat)[0])]
         rf_info = f", RF output '{pred_class_rf}'"
 
     print(f"  --> PASS: SVM output '{pred_class_svm}' (conf: {np.max(svm_probs)*100:.1f}%), KNN output '{pred_class_knn}'{rf_info}.")
