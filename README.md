@@ -12,7 +12,7 @@
 * **Institution:** Dawood University of Engineering & Technology (DUET), Karachi
 * **Department:** Department of Artificial Intelligence
 * **Batch:** 2024-F (5th Semester, 3rd Year)
-* **Student Name:** Muhammad Huzaifa Iftikhar
+* **Group Members:** Muhammad Huzaifa Iftikhar, Muhammad Rizwan, Muhammad Zaid, Abdul Ahad
 * **GitHub Repository:** [https://github.com/MHuzaifaIftikhar/ML-CCP](https://github.com/MHuzaifaIftikhar/ML-CCP)
 * **Course Instructor:** Engr. Hamza Farooqui
 
@@ -20,7 +20,12 @@
 
 ## 1. Executive Summary & Project Overview
 
-This project presents a production-ready, modular, and real-time **American Sign Language (ASL) to English Translator** operating directly on live 720p HD webcam video streams. The system leverages computer vision to track 21 3D hand keypoints in real time, projects coordinates into a scale- and position-invariant feature space (63 numerical features), classifies the hand gesture across all 26 English alphabet letters (`A` through `Z`) using machine learning models, and renders an Augmented Reality (AR) Heads-Up Display (HUD) overlay featuring a temporal frame-smoothing engine that eliminates prediction jitter.
+This project presents a production-ready, modular, and real-time **American Sign Language (ASL) to English Translator with AR Controls & Speech** operating directly on live 720p HD webcam video streams. The system leverages computer vision to track 21 3D hand keypoints in real time, projects coordinates into a scale- and position-invariant feature space (63 numerical features), classifies hand gestures across all 26 English alphabet letters (`A` through `Z`) using machine learning models, and renders an Augmented Reality (AR) Heads-Up Display (HUD) overlay featuring:
+* **7-Frame Temporal Frame-Smoothing** that eliminates prediction jitter.
+* **Thumbs-Up Gesture Toggle (`0.55s`)** to switch seamlessly between **Letter Reading Mode** and **AR Pointer Mode**.
+* **Mid-Air AR Fingertip Selection** (`0.8s` dwell) and clickable/touchable UI controls.
+* **Hybrid Sentence Suggestions** (instant offline shorthand + fuzzy engine, with optional async **Gemini API** support) and **Offline Windows Text-to-Speech**.
+* **Interactive Presentation Tools** (`[G]` in-app Evaluation Graphs Viewer + [presentation.html](presentation.html)).
 
 The implementation fulfills the rigorous requirements of **Lab 14: Complex Computing Activity (Project Idea 5: Gesture Recognition for AR Controls / Translation)** by integrating concepts from four foundational labs:
 1. **Lab 01 (Data Preprocessing):** Anomaly filtering via distance-to-centroid thresholds, null imputation, label encoding, 80/20 stratified splitting, and Z-score standardization via `StandardScaler`.
@@ -249,8 +254,14 @@ python app.py
 ```
 
 #### Interactive Controls in Live Webcam View:
-* **`D`**: **Toggle Dataset Mode:** Switch between **`[CUSTOM LAB]`** (your tuned webcam dataset) and **`[KAGGLE BENCHMARK]`**.
-* **`M`**: **Toggle Classifier:** Switch between **`[SVM]`** (Tuned RBF, 99.78% acc) and **`[KNN]`** (Tuned Manhattan, 98.38% acc).
+* **`Thumbs-Up (0.55s)` or `R`**: **Toggle Reading ON / AR Pointer Mode:** Pause letter reading and use your index fingertip as an AR cursor (hover `0.8s` over any suggestion or button to select!).
+* **`1` / `2` / `3` or Click/Touch**: **Select Suggested Sentence & Speak:** Picks a live suggested sentence and speaks it aloud.
+* **`ENTER` / `V` or `[SPEAK]`**: **Speak Sentence:** Speaks the currently constructed sentence aloud via offline Windows TTS.
+* **`SPACE` / `BACKSPACE` / `A` / `X`**: Add space / delete last letter / manually add current sign / clear sentence.
+* **`T`**: **Toggle Auto-Type Dwell (`1.2s`):** Enable or disable automatic letter appending.
+* **`G` or `[G] EVAL GRAPHS`**: **Evaluation Graphs Viewer:** Flip through all confusion matrices, GridSearch heatmaps, and model comparison plots right inside the app.
+* **`D`**: **Toggle Dataset Mode:** Switch between **`[CUSTOM LAB]`** (default) and **`[KAGGLE BENCHMARK]`**.
+* **`M`**: **Toggle Classifier:** Switch between **`[SVM]`** (Tuned RBF, 99.70% acc) and **`[KNN]`** (Tuned Manhattan, 98.96% acc).
 * **`S`**: **Toggle Temporal Frame-Smoothing:** Switch smoothing `ON` (majority-vote queue) or `OFF` (instantaneous raw prediction).
 * **`C`**: **Clear Temporal Buffer:** Resets the 7-frame sliding window history.
 * **`Q` or `ESC`**: Exit application cleanly.
@@ -330,9 +341,13 @@ ALL 7 VERIFICATION TESTS PASSED SUCCESSFULLY! [100% OK]
 
 ---
 
-## 10. Author & Submission Information
+## 10. Group Members & Submission Information
 
-* **Author:** Muhammad Huzaifa Iftikhar
+* **Group Members:**
+  * Muhammad Huzaifa Iftikhar
+  * Muhammad Rizwan
+  * Muhammad Zaid
+  * Abdul Ahad
 * **Roll / Registration:** DUET Batch 2023-F
 * **Department:** Department of Artificial Intelligence
 * **University:** Dawood University of Engineering & Technology (DUET), Karachi
