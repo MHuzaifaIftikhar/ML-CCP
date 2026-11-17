@@ -373,9 +373,7 @@ def plot_confusion_matrix(
     Lab 06 & Lab 08 Alignment:
       - Visualizes classification performance across all 26 ASL classes.
     """
-    fig_size = (16, 13) if len(labels) > 26 else (14, 11)
-    annot_font = 8 if len(labels) > 26 else 10
-    plt.figure(figsize=fig_size)
+    plt.figure(figsize=(14, 11))
     sns.set_theme(style="white")
 
     ax = sns.heatmap(
@@ -385,7 +383,6 @@ def plot_confusion_matrix(
         cmap="Blues",
         xticklabels=labels,
         yticklabels=labels,
-        annot_kws={"size": annot_font},
         cbar_kws={'label': 'Sample Count'},
         linewidths=0.5,
         linecolor='lightgray'
@@ -413,13 +410,12 @@ def plot_model_comparison(
     """
     metric_names = ["Accuracy", "Precision", "Recall", "F1-Score"]
     models = list(metrics_dict.keys())
-    n_models = len(models)
     
     x = np.arange(len(metric_names))
-    width = 0.8 / max(1, n_models)
+    width = 0.35
 
-    fig, ax = plt.subplots(figsize=(11, 6))
-    colors = ['#1f77b4', '#2ca02c', '#ff7f0e', '#9467bd', '#d62728']
+    fig, ax = plt.subplots(figsize=(10, 6))
+    colors = ['#1f77b4', '#2ca02c']  # Blue for SVM, Green for KNN
 
     for idx, model in enumerate(models):
         scores = [
@@ -428,7 +424,7 @@ def plot_model_comparison(
             metrics_dict[model]["recall_macro"],
             metrics_dict[model]["f1_macro"]
         ]
-        offset = (idx - (n_models - 1) / 2.0) * width
+        offset = (idx - 0.5) * width
         rects = ax.bar(x + offset, scores, width, label=model, color=colors[idx % len(colors)], edgecolor='black')
         
         # Value labels on top of bars
@@ -440,15 +436,15 @@ def plot_model_comparison(
                 xytext=(0, 3),
                 textcoords="offset points",
                 ha="center", va="bottom",
-                fontsize=9 if n_models > 2 else 10, fontweight='bold'
+                fontsize=10, fontweight='bold'
             )
 
     ax.set_ylabel("Score (0.0 to 1.0)", fontsize=12)
-    ax.set_title("Classifier Benchmark Comparison on ASL Dataset", fontsize=14, fontweight='bold', pad=15)
+    ax.set_title("Classifier Benchmark: SVM (Lab 06) vs KNN (Lab 08) on ASL Dataset", fontsize=14, fontweight='bold', pad=15)
     ax.set_xticks(x)
     ax.set_xticklabels(metric_names, fontsize=11, fontweight='semibold')
     ax.set_ylim(0, 1.15)
-    ax.legend(loc="upper right", frameon=True, fontsize=10)
+    ax.legend(loc="upper right", frameon=True, fontsize=11)
     ax.grid(axis='y', linestyle='--', alpha=0.5)
 
     plt.tight_layout()
@@ -490,10 +486,9 @@ def plot_cross_dataset_comparison(
     save_path: Optional[Path] = config.DATASET_COMPARISON_PLOT_PATH
 ) -> None:
     """
-    Plots a multi-bar comparison contrasting models across datasets:
+    Plots a multi-bar comparison contrasting models trained on:
       1. Custom Lab Dataset (Webcam)
       2. Kaggle Benchmark Dataset (Clean)
-      3. ASL 36 Classes Dataset (Digits 0-9 + Letters A-Z)
     """
     labels = list(benchmark_data.keys())
     accuracies = [benchmark_data[k]["accuracy"] * 100 for k in labels]
@@ -502,8 +497,7 @@ def plot_cross_dataset_comparison(
     x = np.arange(len(labels))
     width = 0.35
 
-    figsize = (14, 6) if len(labels) > 4 else (11, 6)
-    fig, ax = plt.subplots(figsize=figsize)
+    fig, ax = plt.subplots(figsize=(11, 6))
     rects1 = ax.bar(x - width/2, accuracies, width, label='Accuracy (%)', color='#2b5c8f', edgecolor='black')
     rects2 = ax.bar(x + width/2, f1_scores, width, label='Macro F1 (%)', color='#36a282', edgecolor='black')
 
@@ -512,16 +506,13 @@ def plot_cross_dataset_comparison(
         ax.annotate(f"{height:.1f}%",
                     xy=(rect.get_x() + rect.get_width() / 2, height),
                     xytext=(0, 3), textcoords="offset points",
-                    ha='center', va='bottom', fontsize=8 if len(labels) > 6 else 9, fontweight='bold')
+                    ha='center', va='bottom', fontsize=9, fontweight='bold')
 
-    min_val = max(0, int(min(accuracies + f1_scores) - 10))
     ax.set_ylabel('Percentage (%)', fontsize=12)
-    ax.set_title('Cross-Dataset & Multi-Model Evaluation Benchmark (Lab 14 CCA)', fontsize=14, fontweight='bold', pad=15)
+    ax.set_title('Cross-Dataset Evaluation: Custom Lab Data vs Kaggle Benchmark Data', fontsize=14, fontweight='bold', pad=15)
     ax.set_xticks(x)
-    rotation = 20 if len(labels) > 4 else 0
-    ha = 'right' if len(labels) > 4 else 'center'
-    ax.set_xticklabels(labels, fontsize=9 if len(labels) > 6 else 10, fontweight='semibold', rotation=rotation, ha=ha)
-    ax.set_ylim(min_val, 105)
+    ax.set_xticklabels(labels, fontsize=10, fontweight='semibold')
+    ax.set_ylim(80, 105)
     ax.legend(loc='lower right', frameon=True)
     ax.grid(axis='y', linestyle='--', alpha=0.5)
 

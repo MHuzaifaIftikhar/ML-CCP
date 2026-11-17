@@ -176,18 +176,13 @@ def extract_features_and_labels(df: pd.DataFrame) -> Tuple[np.ndarray, np.ndarra
     X = df[config.FEATURE_COLUMNS].values.astype(np.float32)
     raw_labels = df[config.TARGET_COLUMN].astype(str).str.strip().str.upper().values
 
-    # Fit LabelEncoder on 36 classes (0-9, A-Z) or 26 alphabet classes (A-Z)
+    # Fit LabelEncoder on all 26 alphabetic classes
     label_encoder = LabelEncoder()
-    if any(ch.isdigit() for ch in raw_labels) or len(np.unique(raw_labels)) > 26:
-        label_encoder.fit(config.LABELS_36)
-        class_desc = "36 classes (0-9 and A-Z mapped to 0-35)"
-    else:
-        label_encoder.fit(config.LABELS)
-        class_desc = "26 classes (A-Z mapped to 0-25)"
+    label_encoder.fit(config.LABELS)
     y = label_encoder.transform(raw_labels)
 
     print(f"[+] Features extracted: shape {X.shape}, dtype {X.dtype}")
-    print(f"[+] Target encoded: {len(np.unique(y))} unique classes ({class_desc})")
+    print(f"[+] Target encoded: {len(np.unique(y))} unique classes (A-Z mapped to 0-25)")
     return X, y, label_encoder
 
 
@@ -295,20 +290,16 @@ def load_preprocessed_data(
     apply_anomaly_filter: bool = True
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, StandardScaler]:
     """
-    Loads and executes the full preprocessing pipeline for 'custom', 'kaggle', or 'asl36' dataset.
+    Loads and executes the full preprocessing pipeline for either 'custom' or 'kaggle' dataset.
     
     Args:
-        dataset_name: 'custom' (user webcam data), 'kaggle' (clean benchmark), or 'asl36' (36 classes).
+        dataset_name: 'custom' (user webcam data) or 'kaggle' (clean benchmark data).
         apply_anomaly_filter: If True and dataset_name == 'custom', applies automated outlier trimming.
         
     Returns:
         X_train_scaled, X_test_scaled, y_train, y_test, scaler
     """
-    if dataset_name.lower() in ["asl36", "36"]:
-        csv_path = config.ASL36_CSV_PATH
-        scaler_save_path = config.ASL36_SCALER_PATH
-        print(f"\n[+] Preprocessing Mode: ASL 36-CLASSES GESTURE DATASET ({csv_path.name})")
-    elif dataset_name.lower() == "kaggle":
+    if dataset_name.lower() == "kaggle":
         csv_path = config.KAGGLE_CSV_PATH
         scaler_save_path = config.KAGGLE_SCALER_PATH
         print(f"\n[+] Preprocessing Mode: KAGGLE BENCHMARK DATASET ({csv_path.name})")
